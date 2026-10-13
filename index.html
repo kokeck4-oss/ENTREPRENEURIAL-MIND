@@ -223,19 +223,6 @@ footer{text-align:center;color:var(--mut);font-size:13px;padding:30px 0 10px}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
-/* ---------- print (Print button saves the reviewer as PDF) ---------- */
-@media print{
-  #fx,.aurora,.grid,header,.hero,.stats,#side,.cta,.eli .btn,#exh,#exam,footer,#prog,#confetti{display:none!important}
-  body{background:#fff;color:#111}
-  .layout{display:block;margin:0}
-  .card{background:#fff;border:1px solid #bbb;box-shadow:none;break-inside:avoid;opacity:1!important;transform:none!important;backdrop-filter:none}
-  .rv{opacity:1!important;transform:none!important}
-  b,.th h3{color:#111}.fc b{color:#0f766e}.fc span,.ti div,ul.pts li{color:#222}
-  ul.pts li,.fc,.ti{background:#fafafa;border:1px solid #e5e5e5}
-  code{color:#7c2d12;background:#fff7ed;border-color:#fdba74}
-  .e5{max-height:none!important;opacity:1!important;margin-top:8px;padding:10px 14px;background:#f3f0ff;border-color:#c4b5fd;color:#111}
-  .ti::before{background:#fff}.ti .yr{color:#04070f}
-}
 #accessGate{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;margin:0;padding:24px;max-width:none;background:var(--bg);color:var(--txt);text-align:center}
 #accessGate p{max-width:36rem;margin:0;padding:24px 30px;border:1px solid var(--line);border-radius:18px;background:var(--glass);font-weight:800;letter-spacing:.04em}
 #accessGate[hidden]{display:none}
@@ -264,8 +251,7 @@ html.access-denied body > :not(#accessGate){display:none!important}
     <b style="background:#fb7185;color:#fb7185" data-t="rose"></b>
   </div>
   <button class="ibtn" onclick="toggleAll()">&#129490; ELI5 all</button>
-  <button class="ibtn" onclick="dlPdf()">&#11015; PDF</button>
-  <button class="ibtn" onclick="printRev()">&#128424; Print</button>
+  <button class="ibtn" onclick="dlPdf()">Download PDF Reviewer</button>
 </header>
 
 <main class="wrap">
@@ -392,8 +378,6 @@ T.forEach((x,i)=>{
 function toggleDone(i){const k=done.indexOf(i);if(k>=0)done.splice(k,1);else done.push(i);ls.set('wfDone',JSON.stringify(done));updStats()}
 let allOn=false;
 function toggleAll(){allOn=!allOn;document.querySelectorAll('.e5').forEach(e=>e.classList.toggle('on',allOn));if(!examActive)show('rev')}
-function printRev(){if(examActive)return;show('rev');setTimeout(()=>window.print(),150)}
-
 /* reveal + scroll spy + spotlight */
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')}),{threshold:.05});
 document.querySelectorAll('.rv').forEach(c=>io.observe(c));
@@ -584,7 +568,7 @@ function dlPdf(){
     const url=URL.createObjectURL(new Blob([u],{type:'application/pdf'}));
     const a=document.createElement('a');a.href=url;a.download='Wadhwani_Midterm_Reviewer_Summary.pdf';
     document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
-  }catch(e){printRev()}
+  }catch(e){console.error('PDF download failed:',e);alert('Could not download the PDF reviewer. Please try again.')}
 }
 
 setTheme(ls.get('wfTheme','teal'));
