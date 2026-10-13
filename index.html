@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="access-pending">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -236,9 +236,15 @@ footer{text-align:center;color:var(--mut);font-size:13px;padding:30px 0 10px}
   .e5{max-height:none!important;opacity:1!important;margin-top:8px;padding:10px 14px;background:#f3f0ff;border-color:#c4b5fd;color:#111}
   .ti::before{background:#fff}.ti .yr{color:#04070f}
 }
+#accessGate{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;margin:0;padding:24px;max-width:none;background:var(--bg);color:var(--txt);text-align:center}
+#accessGate p{max-width:36rem;margin:0;padding:24px 30px;border:1px solid var(--line);border-radius:18px;background:var(--glass);font-weight:800;letter-spacing:.04em}
+#accessGate[hidden]{display:none}
+html.access-pending body > :not(#accessGate),
+html.access-denied body > :not(#accessGate){display:none!important}
 </style>
 </head>
 <body>
+<div id="accessGate" role="alert" aria-live="assertive" aria-busy="true"><p id="accessMessage">Checking BSIT_STUDY access&hellip;</p></div>
 <canvas id="fx"></canvas>
 <div class="aurora"><i></i><i></i><i></i></div>
 <div class="grid"></div>
@@ -583,6 +589,72 @@ function dlPdf(){
 
 setTheme(ls.get('wfTheme','teal'));
 updStats();
+</script>
+<script type="module">
+const MATERIAL_ID="-P3pYh_459UiKb2JeiaS";
+const REDEEM_URL="https://bsit-study.vercel.app/api/redeemViewerTicket";
+const gate=document.getElementById("accessGate");
+const message=document.getElementById("accessMessage");
+
+function denyAccess(reason){
+  console.warn("Study material access denied:",reason);
+  document.documentElement.classList.remove("access-pending");
+  document.documentElement.classList.add("access-denied");
+  message.textContent="MUST ACCESS THROUGH BSIT_STUDY";
+  gate.setAttribute("aria-busy","false");
+}
+
+function showServiceError(error){
+  console.error("Unable to validate study material access.",error);
+  document.documentElement.classList.remove("access-pending");
+  document.documentElement.classList.add("access-denied");
+  message.textContent="Unable to verify access right now. Return to BSIT_STUDY and try opening this material again.";
+  gate.setAttribute("aria-busy","false");
+}
+
+async function validateViewerTicket(){
+  const url=new URL(location.href);
+  const ticket=url.searchParams.get("bsit_ticket");
+  const materialId=url.searchParams.get("bsit_material");
+  if(!ticket||!materialId){
+    denyAccess("ticket or material ID is missing");
+    return;
+  }
+  if(materialId!==MATERIAL_ID){
+    denyAccess("ticket is for a different material");
+    return;
+  }
+
+  try{
+    const response=await fetch(REDEEM_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ticket,materialId})
+    });
+    if(response.status===400||response.status===403){
+      denyAccess("the server rejected the ticket");
+      return;
+    }
+    if(!response.ok)throw new Error(`Ticket service returned HTTP ${response.status}`);
+
+    const result=await response.json();
+    if(result.valid!==true||result.materialId!==MATERIAL_ID){
+      denyAccess("the server returned an invalid ticket response");
+      return;
+    }
+
+    url.searchParams.delete("bsit_ticket");
+    url.searchParams.delete("bsit_material");
+    history.replaceState(history.state,"",url.pathname+url.search+url.hash);
+    document.documentElement.classList.remove("access-pending","access-denied");
+    document.documentElement.classList.add("access-granted");
+    gate.hidden=true;
+  }catch(error){
+    showServiceError(error);
+  }
+}
+
+validateViewerTicket();
 </script>
 </body>
 </html>
